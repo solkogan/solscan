@@ -4,6 +4,8 @@ import sys, os, codecs, re
 import webbrowser
 import requests
 
+stopwords=['403 Forbidden', 'Not Found', 'Welcome to nginx on Debian!','IIS7']
+
 dic={
 "\\xD0\\xB0":"а", "\\xD0\\x90":"А",
 "\\xD0\\xB1":"б", "\\xD0\\x91":"Б",
@@ -45,14 +47,23 @@ urls=[]
 f=open('output.txt', 'r')
 f2=open('output.html', 'w')
 
-f2.write('<html lang="ru"><head><title>Scan results</title><meta charset="utf-8"></head><body>')
+f2.write('''<html lang="ru"><head><title>Scan results</title><meta charset="utf-8">
+         <style>
+         td {
+         padding: 7px;
+         }
+         td a {
+         color: navy;
+         }
+         </style>
+         </head><body><table border=1>''')
 
 for x in f:
     if('Nmap scan report for' in x):
         hosts = re.search('(\d+\.\d+\.\d+\.\d+)', x)
         host=hosts.group(1).strip()
     if('Anonymous FTP login allowed' in x):
-        urls.append('<a href="ftp://'+host+'" target="_blank">Открытый FTP <b>ftp://'+host+'</b></a><p>')
+        urls.append('<tr><td>Открытый FTP</td><td><a href="ftp://'+host+'" target="_blank"><b>ftp://'+host+'</b></a></td><td></td></tr>')
     if('http-title:' in x):
         x=x.replace('|_http-title:','')
         x=x.replace('| http-title: ','')
@@ -60,18 +71,21 @@ for x in f:
         for k in dic:      
             if (k in w):
                 w=w.replace(k, dic[k])
-        s=requests.get('http://'+host)
-        htmlcode=s.text
+        htmlcode=''
+        # s=requests.get('http://'+host)
+        # htmlcode=s.text
         htmltype=''
         if('password' in htmlcode):
             htmltype='Форма авторизации'
         if('location.href' in htmlcode):
             htmltype='Переадресация'
-        urls.append('<a href="http://'+host+'" target="_blank">'+w+' ('+htmltype+') <b>'+host+'</b></a><p>')
+        if not(w in stopwords):
+            urls.append('<tr><td>'+w+'</td><td><a href="http://'+host+'" target="_blank"><b>'+host+'</b></a></td><td>'+htmltype+'</td></tr>')
 urls=list(set(urls))
+urls.sort()
 for s in urls:
     f2.write(s)
-f2.write('</body></html>')
+f2.write('</table></body></html>')
 f2.close()
 f.close()
         
