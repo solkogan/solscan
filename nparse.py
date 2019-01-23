@@ -76,16 +76,18 @@ for x in f:
         # htmlcode=s.text
         htmltype=''
         ff=open(u'fingerprints.txt', 'r')
+        color='white'
         for keyword in ff:
             ms=keyword.split('|')
             if(ms[0].strip() in w):
                 htmltype=ms[1]
+                color='#eaeaea'
         if('password' in htmlcode):
             htmltype='Форма авторизации'
         if('location.href' in htmlcode):
             htmltype='Переадресация'
         if not(w in stopwords):
-            urls.append('<tr><td>'+w+'</td><td><a href="http://'+host+'" target="_blank"><b>'+host+'</b></a></td><td>'+htmltype+'</td></tr>')
+            urls.append('<tr style="background: '+color+';"><td>'+w+'</td><td><a href="http://'+host+'" target="_blank"><b>'+host+'</b></a></td><td>'+htmltype+'</td></tr>')
 urls=list(set(urls))
 urls.sort()
 for s in urls:
