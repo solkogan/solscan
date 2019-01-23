@@ -75,6 +75,11 @@ for x in f:
         # s=requests.get('http://'+host)
         # htmlcode=s.text
         htmltype=''
+        ff=open(u'fingerprints.txt', 'r')
+        for keyword in ff:
+            ms=keyword.split('|')
+            if(ms[0].strip() in w):
+                htmltype=ms[1]
         if('password' in htmlcode):
             htmltype='Форма авторизации'
         if('location.href' in htmlcode):
