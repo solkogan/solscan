@@ -4,7 +4,7 @@ import sys, os, codecs, re
 import webbrowser
 import requests
 
-stopwords=['403 Forbidden', 'Not Found', 'Welcome to nginx on Debian!','IIS7']
+stopwords=['403 Forbidden', 'Not Found', 'Welcome to nginx on Debian!']
 
 dic={
 "\\xD0\\xB0":"а", "\\xD0\\x90":"А",
@@ -76,12 +76,12 @@ for x in f:
         # htmlcode=s.text
         htmltype=''
         ff=open(u'fingerprints.txt', 'r')
-        color='white'
+        color='#eaeaea'
         for keyword in ff:
             ms=keyword.split('|')
             if(ms[0].strip() in w):
                 htmltype=ms[1]
-                color='#eaeaea'
+                color='white'
         if('password' in htmlcode):
             htmltype='Форма авторизации'
         if('location.href' in htmlcode):
