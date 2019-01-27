@@ -1,13 +1,12 @@
 import sys
-import subprocess
-# Импортируем наш интерфейс
 from mainwindow import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 # Импортируем модуль threading для работы с потоками
 import threading
+from subprocess import Popen, PIPE, STDOUT
 
 listen=''
-
+outputtext=''
 
 # Функции для сигналов между потоками
 def signal_handler(signal, frame):
@@ -43,8 +42,9 @@ class MyWin(QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        qss_file = open('style_file.qss').read()
+        self.setStyleSheet(qss_file)
         self.ui.lineEdit.setText('37.151.22.0 - 37.151.22.255')
-        self.ui.textEdit.setText('Этот ебучий сканер не уведомляет тебя о ходе процесса сканирования, поэтому просто укажи в поле ввода начальный и конечный IP диапазона через тире, а потом сиди и жди пока не откроется браузер :)')
         # Здесь прописываем событие нажатия на кнопку Scan                   
         self.ui.pushButton.clicked.connect(self.scanips)
         global listen
@@ -54,11 +54,22 @@ class MyWin(QtWidgets.QMainWindow):
     @thread
     def gocommand(self):
         global listen
-        subprocess.call('masscan -p80,21 -iL masin.txt --rate=300 -oL masout.txt', shell=True)
-        listen.emit([1])
-        subprocess.call('awk \'{ print $4 }\' masout.txt > nmapin.txt', shell=True)
-        subprocess.call('nmap -p 80,21 --script "http-title","ftp-anon" -iL nmapin.txt -oN output.txt', shell=True)
-        subprocess.call('python3 nparse.py', shell=True)
+        p = Popen('masscan -p80,21 -iL masin.txt --rate=300 -oL masout.txt', stdout = PIPE, stderr = STDOUT, shell = True)
+        while p.poll() is None:
+            line = p.stdout.readline()
+            listen.emit([line])
+        p = Popen('awk \'{ print $4 }\' masout.txt > nmapin.txt', stdout = PIPE, stderr = STDOUT, shell = True)
+        while p.poll() is None:
+            line = p.stdout.readline()
+            listen.emit([line])
+        p = Popen('nmap -p 80,21 --script "http-title","ftp-anon" -iL nmapin.txt -oN output.txt', stdout = PIPE, stderr = STDOUT, shell = True)
+        while p.poll() is None:
+            line = p.stdout.readline()
+            listen.emit([line])
+        p = Popen('python3 nparse.py', stdout = PIPE, stderr = STDOUT, shell = True)
+        while p.poll() is None:
+            line = p.stdout.readline()
+            listen.emit([line])
 
     # Функция которая выполняется при нажатии на кнопку Scan                 
     def scanips(self):
@@ -82,9 +93,18 @@ class MyWin(QtWidgets.QMainWindow):
         f.close()
         self.gocommand()
     
-    def mylisten(self, data):  
-        if(data[0]==1):
-            self.ui.textEdit.setText('Masscan завершил сканирование, к делу приступил Nmap')
+    def mylisten(self, data):
+        global outputtext
+        t=str(data[0])
+        t=t.replace('b\'\'','')
+        t=t.replace('b\'','')
+        t=t.replace('\\n\'','')
+        t=t.replace('\\r','<br>')
+        outputtext+='<br>'+t
+        self.ui.textEdit.setText(outputtext)
+        self.ui.textEdit.update()
+        self.ui.textEdit.moveCursor(QtGui.QTextCursor.End)
+        self.ui.textEdit.ensureCursorVisible()
        
         
 
